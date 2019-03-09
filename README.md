@@ -4,8 +4,8 @@
     new = { C = { new = { D } } }
     assign = { B = C }
     assign = { D = A }
-    delete = { A = { delete = { B } }
-    delete = { C = { delete = { D } }
+    delete = { A }
+    delete = { C }
     
 # Log -> Graph -> Analysis and Visualization.
     
