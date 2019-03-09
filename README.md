@@ -7,5 +7,5 @@
     delete = { A }
     delete = { C }
     
-# Log -> Graph -> Analysis and Visualization.
+# Log -> My Group Manager -> Analysis and Visualization.
     
