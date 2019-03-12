@@ -67,5 +67,5 @@
     ReturnId = { 9"_y" }
     ReturnId = { 5"_x" }
 
-# Log -> My Group Manager -> Analysis and Visualization.
+# Log -> My Group Manager -> Analysis -> Visualization.
     
