@@ -414,7 +414,7 @@ namespace wiz {
 
 				return index;
 			}
-			int searchGroup(const std::string & groupName)
+			int searchGroup(const std::string& groupName)
 			{
 				int index = -1;
 				int left = 0; int right = groupMemberN - 1;
@@ -504,9 +504,29 @@ namespace wiz {
 			{
 				return rootGroup->isItemExist(itemName);
 			}
+			bool IsItemExist(const std::string& groupName, const std::string& place)
+			{
+				wiz::WizSmartPtr<Group<T>> x;
+				if (rootGroup->getGroup(place, x)) {
+					return x->isItemExist(groupName);
+				}
+				else {
+					return false;
+				}
+			}
 			bool IsGroupExist(const std::string& groupName)
 			{
 				return rootGroup->isGroupExist(groupName);
+			}
+			bool IsGroupExist(const std::string& groupName, const std::string& place)
+			{
+				wiz::WizSmartPtr<Group<T>> x;
+				if (rootGroup->getGroup(place, x)) {
+					return x->isGroupExist(groupName);
+				}
+				else {
+					return false;
+				}
 			}
 
 			bool NewItem(const std::string& itemName, const T& value)
@@ -606,7 +626,7 @@ namespace wiz {
 			bool GetValue(const std::string& itemName, T& value)
 			{
 				Item<T> itemPtr;
-				if (GetItem(itemPtr))
+				if (GetItem(itemName, itemPtr))
 				{
 					value = itemPtr.getValue();
 					return true;
@@ -616,6 +636,11 @@ namespace wiz {
 					return false;
 				}
 			}
+			bool GetGroup(const std::string& groupName, wiz::WizSmartPtr<Group<T>>& value)
+			{
+				return rootGroup->getGroup(groupName, value);
+			}
+
 			bool SetValue(const std::string& itemName, const T value)
 			{
 				return rootGroup->setItemValue(itemName, value);
