@@ -75,6 +75,24 @@ std::string GetPtrId(std::string str)
 	}
 	return str;
 }
+
+void AddNewEmpty(wiz::MGM::GroupManager<std::string>& analyzer, wiz2::load_data::UserType* ut)
+{
+	std::string x = GetPtrId(ut->GetItemList(0).Get(0));
+
+	if (analyzer.IsGroupExist(x)) {
+		std::cout << "internal error1\n";
+		return;
+	}
+	else {
+		analyzer.NewGroup(x, 1, 1);
+		analyzer.AddGroupToGroup(x, "not-inited");
+		analyzer.AddGroupToGroup(x, "ptr-list");
+		analyzer.NewItem(x, "object-nullptr");
+		analyzer.AddItemToGroup(x, "relation");
+	}
+}
+
 void _AddNew(wiz::MGM::GroupManager<std::string>& analyzer, wiz2::load_data::UserType* ut)
 {
 	if (ut->GetUserTypeListSize() <= 0) { 
@@ -83,21 +101,8 @@ void _AddNew(wiz::MGM::GroupManager<std::string>& analyzer, wiz2::load_data::Use
 	std::string parent_name = ut->GetName();
 
 	for (int i = 0; i < ut->GetUserTypeListSize(); ++i) {
-		std::string x = GetPtrId(ut->GetUserTypeList(i)->GetName());
-		if (analyzer.IsGroupExist(x)) {
-			std::cout << "internal error1\n";
-			return;
-		}
-		else {
-			analyzer.NewGroup(x, 1, 1);
-			analyzer.AddGroupToGroup(x, "not-inited");
-			analyzer.AddGroupToGroup(x, "ptr-list");
-			analyzer.AddGroupToGroup(x, parent_name);
-			analyzer.NewItem(x, "object-nullptr");
-			analyzer.AddItemToGroup(x, "relation");
-
-		}
-		//
+		AddNewEmpty(analyzer, ut->GetUserTypeList(i));
+		
 		_AddNew(analyzer, ut->GetUserTypeList(i));
 	}
 }
@@ -329,7 +334,10 @@ int main(void)
 			const std::string name = global.GetUserTypeList(i)->GetName();
 
 			// chk not inited, memory leaks, double delete, new-delete macthing, and etc.. ( using my group manager )
-			if (name == "New") { 
+			if (name == "NewEmpty") {
+				AddNewEmpty(analyzer, global.GetUserTypeList(i));
+			}
+			else if (name == "New") { 
 				AddNew(analyzer, global.GetUserTypeList(i)); // object
 			}
 			else if (name == "NewArray") {
