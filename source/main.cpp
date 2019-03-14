@@ -99,6 +99,8 @@ void AddNewEmpty(wiz::MGM::GroupManager<std::string>& analyzer, wiz2::load_data:
 
 void AddNew(wiz::MGM::GroupManager<std::string>& analyzer, wiz2::load_data::UserType* ut);
 
+void AddNewArray(wiz::MGM::GroupManager<std::string>& analyzer, wiz2::load_data::UserType* ut);
+
 void _AddNew(wiz::MGM::GroupManager<std::string>& analyzer, wiz2::load_data::UserType* ut)
 {
 	if (ut->GetUserTypeListSize() <= 0) { 
@@ -107,13 +109,19 @@ void _AddNew(wiz::MGM::GroupManager<std::string>& analyzer, wiz2::load_data::Use
 	
 	for (int i = 0; i < ut->GetUserTypeListSize(); ++i) {
 		std::string name = ut->GetUserTypeList(i)->GetName();
+		if (ut->GetUserTypeList(i)->GetIListSize() == 0) {
+			continue;
+		}
+
 		if (name == "NewEmpty") {
 			AddNewEmpty(analyzer, ut->GetUserTypeList(i));
 		}
 		else if (name == "New") {
 			AddNew(analyzer, ut->GetUserTypeList(i));
 		}
-
+		else if (name == "NewArray") {
+			AddNewArray(analyzer, ut->GetUserTypeList(i));
+		}
 		_AddNew(analyzer, ut->GetUserTypeList(i));
 	}
 }
@@ -163,10 +171,6 @@ void AddNew(wiz::MGM::GroupManager<std::string>& analyzer, wiz2::load_data::User
 
 void AddNewArray(wiz::MGM::GroupManager<std::string>& analyzer, wiz2::load_data::UserType* ut)
 {
-	if (ut->GetUserTypeListSize() <= 0) {
-		//std::cout << "intenal error2\n";
-		return;
-	}
 	// 
 	std::string y = GetObjectId();
 	std::string x = GetPtrId(ut->GetItemList(0).Get(0)); // PtrId
@@ -436,7 +440,7 @@ void Assign(wiz::MGM::GroupManager<std::string>& analyzer, wiz2::load_data::User
 		analyzer.GetValue(left_pid, left_obj_id) // if success return true.
 		) {
 		if ( wiz::WizSmartPtr<wiz::MGM::Group<std::string>> x; left_obj_id != "object-nullptr" && analyzer.GetGroup(left_obj_id, x)) {
-			if (x->getGroupMemberN() == 0) {
+			if (x->getGroupMemberN() > 0) {
 				// memory leaks...
 				std::cout << "Memory leak.. in Assign\n";
 				return;
