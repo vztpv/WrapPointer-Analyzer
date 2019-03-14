@@ -161,6 +161,54 @@ void AddNew(wiz::MGM::GroupManager<std::string>& analyzer, wiz2::load_data::User
 	_AddNew(analyzer, inner);
 }
 
+void AddNewArray(wiz::MGM::GroupManager<std::string>& analyzer, wiz2::load_data::UserType* ut)
+{
+	if (ut->GetUserTypeListSize() <= 0) {
+		//std::cout << "intenal error2\n";
+		return;
+	}
+	// 
+	std::string y = GetObjectId();
+	std::string x = GetPtrId(ut->GetItemList(0).Get(0)); // PtrId
+	std::string num = ut->GetItemList(1).Get(0);
+
+	if (analyzer.IsGroupExist(x)) {
+		std::cout << "intenal error3\n";
+		return;
+	}
+	else if (analyzer.IsGroupExist(y)) {
+		std::cout << "internal error4\n";
+		return;
+	}
+	else {
+		if (analyzer.IsGroupExist("deleted" + y, "deleted")) {
+			analyzer.RemoveGroupFromGroup("deleted" + y, "deleted");
+			analyzer.RemoveGroup("deleted" + y);
+		}
+		analyzer.NewGroup(x, 1, 1);
+		analyzer.AddGroupToGroup(x, "inited");
+		analyzer.AddGroupToGroup(x, "ptr-list");
+
+		analyzer.NewGroup(y, 1, 1);
+		analyzer.AddGroupToGroup(y, "object-list");
+		analyzer.AddGroupToGroup(y, "array");
+		analyzer.NewItem("array-size" + y, num);
+		analyzer.AddItemToGroup("array-size" + y, "array-size");
+		analyzer.NewItem(x, y);
+		analyzer.AddItemToGroup(x, "relation");
+
+		analyzer.AddGroupToGroup(x, y); //
+
+		// offset
+		analyzer.NewItem("offset" + x, "0");
+		analyzer.AddItemToGroup("offset" + x, "offset");
+	}
+	//
+	for (int i = 0; i < ut->GetUserTypeListSize(); ++i) {
+		_AddNew(analyzer, ut->GetUserTypeList(i));
+	}
+}
+
 void Access(wiz::MGM::GroupManager<std::string>& analyzer, wiz2::load_data::UserType* ut);
 // ptr + integer.
 void AddNewLocal(wiz::MGM::GroupManager<std::string>& analyzer, wiz2::load_data::UserType* ut)
@@ -418,6 +466,11 @@ void Delete(wiz::MGM::GroupManager<std::string>& analyzer, wiz2::load_data::User
 		return;
 	}
 
+	if (analyzer.IsGroupExist(obj_id, "array")) {
+		std::cout << "tried delete not-array but it is array!\n";
+		return;
+	}
+
 	if (analyzer.IsGroupExist("deleted" + obj_id, "deleted")) {
 		std::cout << "tried delete already deleted thing2\n";
 		return;
@@ -434,21 +487,117 @@ void Delete(wiz::MGM::GroupManager<std::string>& analyzer, wiz2::load_data::User
 			analyzer.GetValue("offset" + id, offset);
 			long long value = stoll(offset);
 
-			if (analyzer.IsGroupExist(id, "not-array")) {
+			if (analyzer.IsGroupExist(obj_id, "not-array")) {
 				if (value != 0) {
 					std::cout << "Deleted maybe wrong pointer\n";
 					return;
 				}
 			}
-			if (analyzer.IsGroupExist(id, "array")) {
-				if (wiz::MGM::Item<std::string> y; analyzer.GetItem(id, y)) {
-					if (wiz::MGM::Item<std::string> z; analyzer.GetItem("array-size" + y.getValue(), z)) {
-						if (long long a = value; a < 0 || a >= stoll(z.getValue())) {
-							std::cout << "Deleted maybe wrong index\n";
-							return;
-						}
+			if (analyzer.IsGroupExist(obj_id, "array")) {
+				if (wiz::MGM::Item<std::string> z; analyzer.GetItem("array-size" + obj_id, z)) {
+					if (long long a = value; a < 0 || a >= stoll(z.getValue())) {
+						std::cout << "Deleted maybe wrong index\n";
+						return;
 					}
-					// internal error
+				}
+				// internal error
+			}
+		}
+	}
+
+
+	bool pass = false;
+
+	auto _end = analyzer.groupItemEnd("relation");
+	for (auto x = analyzer.groupItemBegin("relation"); x != _end; ++x) {
+		if ((*x)->getName() == id) {
+			std::string object_name = (*x)->getValue();
+
+			wiz::WizSmartPtr<wiz::MGM::Group<std::string>> temp;
+			analyzer.GetGroup(object_name, temp);
+			for (auto iter = temp->groupBegin(); iter != temp->groupEnd(); ++iter) {
+				if (!iter->isNULL()) {
+					analyzer.SetValue((*iter)->getName(), "object-nullptr");
+				}
+			}
+
+
+			analyzer.RemoveGroupFromGroup(object_name, "object-list");
+
+
+			analyzer.NewGroup("deleted" + object_name, 1, 1);
+			analyzer.AddGroupToGroup("deleted" + object_name, "deleted");
+
+			
+			analyzer.RemoveGroupFromGroup(object_name, "not-array"); //
+			
+
+			analyzer.RemoveGroupFromGroup(object_name, "object-list");
+
+			analyzer.RemoveGroup(object_name);
+			analyzer.RemoveItemFromGroup(id, "relation");
+			analyzer.RemoveItem(id);
+			
+			analyzer.RemoveItemFromGroup("offset" + id, "offset");
+			analyzer.RemoveItem("offset" + id);
+
+
+			long long object_no = stoll(object_name.substr(6, object_name.size() - 6));
+			removed_tids.insert(object_no); // object
+			tids.erase(object_no);
+
+
+			pass = true;
+			break;
+		}
+	}
+	
+	if (!pass) {
+		std::cout << "internal error9\n";
+		return;
+	}
+}
+
+void DeleteArray(wiz::MGM::GroupManager<std::string>& analyzer, wiz2::load_data::UserType* ut)
+{
+	std::string id = GetPtrId(ut->GetItemList(0).Get(0));
+	std::string obj_id;
+
+	if (analyzer.GetValue(id, obj_id)) {
+		//
+	}
+	else {
+		std::cout << "tried delete already deleted thing1\n";
+		return;
+	}
+
+	if (analyzer.IsGroupExist(obj_id, "not-array")) {
+		std::cout << "tried delete array but it is not array!\n";
+		return;
+	}
+
+	if (analyzer.IsGroupExist("deleted" + obj_id, "deleted")) {
+		std::cout << "tried delete already deleted thing2\n";
+		return;
+	}
+	else if (analyzer.IsGroupExist(id, "not-inited")) {
+		std::cout << "tried delete not inited thing\n";
+		return;
+	}
+
+	if (wiz::WizSmartPtr<wiz::MGM::Group<std::string>> a; analyzer.GetGroup("offset", a)) {
+		wiz::WizSmartPtr<wiz::MGM::Item<std::string>> b;
+		if (a->getItem("offset" + id, b)) {
+			std::string offset;
+			analyzer.GetValue("offset" + id, offset);
+			long long value = stoll(offset);
+
+			if (analyzer.IsGroupExist(obj_id, "array")) {
+				if (wiz::MGM::Item<std::string> z; analyzer.GetItem("array-size" + obj_id, z)) {
+					if (long long a = value; a < 0 || a >= stoll(z.getValue())) {
+						std::cout << "Deleted maybe wrong index\n";
+						return;
+					}
 				}
 				// internal error
 			}
@@ -479,7 +628,6 @@ void Delete(wiz::MGM::GroupManager<std::string>& analyzer, wiz2::load_data::User
 			analyzer.AddGroupToGroup("deleted" + object_name, "deleted");
 
 			analyzer.RemoveGroupFromGroup(object_name, "array"); // 
-			analyzer.RemoveGroupFromGroup(object_name, "not-array"); //
 			analyzer.RemoveItemFromGroup("array-size" + object_name, "array-size");
 			analyzer.RemoveItem("array-size" + object_name);
 
@@ -488,7 +636,7 @@ void Delete(wiz::MGM::GroupManager<std::string>& analyzer, wiz2::load_data::User
 			analyzer.RemoveGroup(object_name);
 			analyzer.RemoveItemFromGroup(id, "relation");
 			analyzer.RemoveItem(id);
-			
+
 			analyzer.RemoveItemFromGroup("offset" + id, "offset");
 			analyzer.RemoveItem("offset" + id);
 
@@ -502,7 +650,7 @@ void Delete(wiz::MGM::GroupManager<std::string>& analyzer, wiz2::load_data::User
 			break;
 		}
 	}
-	
+
 	if (!pass) {
 		std::cout << "internal error9\n";
 		return;
@@ -550,7 +698,7 @@ int main(void)
 				AddNew(analyzer, global.GetUserTypeList(i)); // object
 			}
 			else if (name == "NewArray") {
-				// todo..
+				AddNewArray(analyzer, global.GetUserTypeList(i));
 			}
 			else if (name == "NewLocal") { // ptr + integer..
 				AddNewLocal(analyzer, global.GetUserTypeList(i));
@@ -571,7 +719,7 @@ int main(void)
 				Delete(analyzer, global.GetUserTypeList(i));
 			}
 			else if (name == "delete[]") { // chk array or object?
-				// todo..
+				DeleteArray(analyzer, global.GetUserTypeList(i));
 			}
 		}
 
