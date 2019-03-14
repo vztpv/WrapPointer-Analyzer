@@ -237,13 +237,13 @@ void AddNewLocal(wiz::MGM::GroupManager<std::string>& analyzer, wiz2::load_data:
 				}
 			}
 
-			if (wiz::MGM::Item<std::string> x; analyzer.GetItem("offset" + ppid, x) && analyzer.IsGroupExist(ppid, "not-array")) {
+			if (wiz::MGM::Item<std::string> x; analyzer.GetItem("offset" + ppid, x) && analyzer.IsGroupExist(pobject, "not-array")) {
 				if (stoll(x.getValue()) != 0) {
 					std::cout << "Accessed maybe wrong pointer\n";
 					return;
 				}
 			}
-			if (wiz::MGM::Item<std::string> x; analyzer.GetItem("offset" + ppid, x) && analyzer.IsGroupExist(ppid, "array")) {
+			if (wiz::MGM::Item<std::string> x; analyzer.GetItem("offset" + ppid, x) && analyzer.IsGroupExist(pobject, "array")) {
 				if (wiz::MGM::Item<std::string> y; analyzer.GetItem(ppid, y)) {
 					if (wiz::MGM::Item<std::string> z; analyzer.GetItem("array-size" + y.getValue(), z)) {
 						if (long long a = stoll(x.getValue()); a < 0 || a >= stoll(z.getValue())) {
@@ -368,27 +368,59 @@ void Access(wiz::MGM::GroupManager<std::string>& analyzer, wiz2::load_data::User
 		std::cout << "Accessed invalid pointer\n";
 		return;
 	}
+	std::string object_id;
 	if (wiz::MGM::Item<std::string> object; analyzer.GetItem(pid, object)) {
+		object_id = object.getValue();
 		if (analyzer.IsGroupExist("deleted" + object.getValue(), "deleted")) {
 			std::cout << "Accessed deleted pointer\n";
 			return;
 		}
 	}
-	if (wiz::MGM::Item<std::string> x; analyzer.GetItem("offset" + pid, x) && analyzer.IsGroupExist(pid, "not-array")) {
+	if (wiz::MGM::Item<std::string> x; analyzer.GetItem("offset" + pid, x) && analyzer.IsGroupExist(object_id, "not-array")) {
 		if (stoll(x.getValue()) != 0) {
 			std::cout << "Accessed maybe wrong pointer\n";
 			return;
 		}
 	}
-	if (wiz::MGM::Item<std::string> x; analyzer.GetItem("offset" + pid, x) && analyzer.IsGroupExist(pid, "array")) {
-		if(wiz::MGM::Item<std::string> y; analyzer.GetItem(pid, y)) {
-			if (wiz::MGM::Item<std::string> z; analyzer.GetItem("array-size" + y.getValue(), z)) {
-				if (long long a = stoll(x.getValue()); a < 0 || a >= stoll(z.getValue())) {
-					std::cout << "Accessed maybe wrong index\n";
-					return;
-				}
+	if (wiz::MGM::Item<std::string> x; analyzer.GetItem("offset" + pid, x) && analyzer.IsGroupExist(object_id, "array")) {
+		if (wiz::MGM::Item<std::string> z; analyzer.GetItem("array-size" + object_id, z)) {
+			if (long long a = stoll(x.getValue()); a < 0 || a >= stoll(z.getValue())) {
+				std::cout << "Accessed maybe wrong index\n";
+				return;
 			}
-			// internal error
+		}
+		// internal error
+	}
+}
+void AccessArray(wiz::MGM::GroupManager<std::string>& analyzer, wiz2::load_data::UserType* ut)
+{
+	std::string pid = GetPtrId(ut->GetItemList(0).Get(0));
+	std::string idx = ut->GetItemList(1).Get(0);
+
+	if (analyzer.IsGroupExist(pid, "not-inited")) {
+		std::cout << "Accessed invalid pointer\n";
+		return;
+	}
+	std::string object_id;
+	if (wiz::MGM::Item<std::string> object; analyzer.GetItem(pid, object)) {
+		object_id = object.getValue();
+		if (analyzer.IsGroupExist("deleted" + object.getValue(), "deleted")) {
+			std::cout << "Accessed deleted pointer\n";
+			return;
+		}
+	}
+	if (analyzer.IsGroupExist(object_id, "not-array")) {
+		if (stoll(idx) != 0) {
+			std::cout << "Accessed wrong index\n";
+			return;
+		}
+	}
+	if (analyzer.IsGroupExist(object_id, "array")) {
+		if (wiz::MGM::Item<std::string> z; analyzer.GetItem("array-size" + object_id, z)) {
+			if (long long a = stoll(idx); a < 0 || a >= stoll(z.getValue())) {
+				std::cout << "Accessed wrong index\n";
+				return;
+			}
 		}
 		// internal error
 	}
@@ -711,6 +743,9 @@ int main(void)
 			}
 			else if (name == "access") {
 				Access(analyzer, global.GetUserTypeList(i));
+			}
+			else if (name == "access_array") {
+				AccessArray(analyzer, global.GetUserTypeList(i));
 			}
 			else if (name == "assign") { // chk array or object?
 				Assign(analyzer, global.GetUserTypeList(i));
