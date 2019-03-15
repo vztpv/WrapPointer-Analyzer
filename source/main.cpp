@@ -101,30 +101,6 @@ void AddNew(wiz::MGM::GroupManager<std::string>& analyzer, wiz2::load_data::User
 
 void AddNewArray(wiz::MGM::GroupManager<std::string>& analyzer, wiz2::load_data::UserType* ut);
 
-void _AddNew(wiz::MGM::GroupManager<std::string>& analyzer, wiz2::load_data::UserType* ut)
-{
-	if (ut->GetUserTypeListSize() <= 0) { 
-		return; 
-	}
-	
-	for (int i = 0; i < ut->GetUserTypeListSize(); ++i) {
-		std::string name = ut->GetUserTypeList(i)->GetName();
-		if (ut->GetUserTypeList(i)->GetIListSize() == 0) {
-			continue;
-		}
-
-		if (name == "NewEmpty") {
-			AddNewEmpty(analyzer, ut->GetUserTypeList(i));
-		}
-		else if (name == "New") {
-			AddNew(analyzer, ut->GetUserTypeList(i));
-		}
-		else if (name == "NewArray") {
-			AddNewArray(analyzer, ut->GetUserTypeList(i));
-		}
-		_AddNew(analyzer, ut->GetUserTypeList(i));
-	}
-}
 void AddNew(wiz::MGM::GroupManager<std::string>& analyzer, wiz2::load_data::UserType* ut)
 {
 	if (ut->GetUserTypeListSize() <= 0) {
@@ -151,7 +127,8 @@ void AddNew(wiz::MGM::GroupManager<std::string>& analyzer, wiz2::load_data::User
  		analyzer.NewGroup(x, 1, 1);
 		analyzer.AddGroupToGroup(x, "inited");
 		analyzer.AddGroupToGroup(x, "ptr-list");
-		
+	
+	
 		analyzer.NewGroup(y, 1, 1);
 		analyzer.AddGroupToGroup(y, "object-list");
 		analyzer.AddGroupToGroup(y, "not-array");
@@ -208,9 +185,7 @@ void AddNewArray(wiz::MGM::GroupManager<std::string>& analyzer, wiz2::load_data:
 		analyzer.AddItemToGroup("offset" + x, "offset");
 	}
 	//
-	for (int i = 0; i < ut->GetUserTypeListSize(); ++i) {
-		_AddNew(analyzer, ut->GetUserTypeList(i));
-	}
+	_AddNew(analyzer, ut);
 }
 
 void Access(wiz::MGM::GroupManager<std::string>& analyzer, wiz2::load_data::UserType* ut);
@@ -439,8 +414,10 @@ void Assign(wiz::MGM::GroupManager<std::string>& analyzer, wiz2::load_data::User
 	if (std::string left_obj_id; analyzer.IsItemExist(left_pid, "relation") &&
 		analyzer.GetValue(left_pid, left_obj_id) // if success return true.
 		) {
-		if ( wiz::WizSmartPtr<wiz::MGM::Group<std::string>> x; left_obj_id != "object-nullptr" && analyzer.GetGroup(left_obj_id, x)) {
-			if (x->getGroupMemberN() > 0) {
+		if ( wiz::WizSmartPtr<wiz::MGM::Group<std::string>> x; 
+			left_obj_id != "object-nullptr" && analyzer.GetGroup(left_obj_id, x))
+		{	
+			if (x->getGroupMemberN() == 1) {
 				// memory leaks...
 				std::cout << "Memory leak.. in Assign\n";
 				return;
@@ -450,6 +427,11 @@ void Assign(wiz::MGM::GroupManager<std::string>& analyzer, wiz2::load_data::User
 
 	// left quit relation, (not-inited)
 	analyzer.RemoveItemFromGroup(left_pid, "relation");
+	
+	if (std::string left_object; analyzer.GetValue(left_pid, left_object)) {
+		analyzer.RemoveGroupFromGroup(left_pid, left_object);
+	}
+	
 	analyzer.RemoveItem(left_pid);
 
 	bool inited = false;
@@ -546,6 +528,8 @@ void Delete(wiz::MGM::GroupManager<std::string>& analyzer, wiz2::load_data::User
 
 	auto _end = analyzer.groupItemEnd("relation");
 	for (auto x = analyzer.groupItemBegin("relation"); x != _end; ++x) {
+		if ((*x).isNULL()) { continue; }
+
 		if ((*x)->getName() == id) {
 			std::string object_name = (*x)->getValue();
 
@@ -554,12 +538,10 @@ void Delete(wiz::MGM::GroupManager<std::string>& analyzer, wiz2::load_data::User
 			for (auto iter = temp->groupBegin(); iter != temp->groupEnd(); ++iter) {
 				if (!iter->isNULL()) {
 					analyzer.SetValue((*iter)->getName(), "object-nullptr");
+					analyzer.RemoveItemFromGroup((*iter)->getName(), object_name);
+					analyzer.AddGroupToGroup((*iter)->getName(), "object-nullptr");
 				}
 			}
-
-
-			analyzer.RemoveGroupFromGroup(object_name, "object-list");
-
 
 			analyzer.NewGroup("deleted" + object_name, 1, 1);
 			analyzer.AddGroupToGroup("deleted" + object_name, "deleted");
@@ -569,8 +551,8 @@ void Delete(wiz::MGM::GroupManager<std::string>& analyzer, wiz2::load_data::User
 			
 
 			analyzer.RemoveGroupFromGroup(object_name, "object-list");
-
 			analyzer.RemoveGroup(object_name);
+
 			analyzer.RemoveItemFromGroup(id, "relation");
 			analyzer.RemoveItem(id);
 			
@@ -653,12 +635,10 @@ void DeleteArray(wiz::MGM::GroupManager<std::string>& analyzer, wiz2::load_data:
 			for (auto iter = temp->groupBegin(); iter != temp->groupEnd(); ++iter) {
 				if (!iter->isNULL()) {
 					analyzer.SetValue((*iter)->getName(), "object-nullptr");
+					analyzer.RemoveItemFromGroup((*iter)->getName(), object_name);
+					analyzer.AddGroupToGroup((*iter)->getName(), "object-nullptr");
 				}
 			}
-
-
-			analyzer.RemoveGroupFromGroup(object_name, "object-list");
-
 
 			analyzer.NewGroup("deleted" + object_name, 1, 1);
 			analyzer.AddGroupToGroup("deleted" + object_name, "deleted");
@@ -670,6 +650,7 @@ void DeleteArray(wiz::MGM::GroupManager<std::string>& analyzer, wiz2::load_data:
 			analyzer.RemoveGroupFromGroup(object_name, "object-list");
 
 			analyzer.RemoveGroup(object_name);
+
 			analyzer.RemoveItemFromGroup(id, "relation");
 			analyzer.RemoveItem(id);
 
@@ -690,6 +671,51 @@ void DeleteArray(wiz::MGM::GroupManager<std::string>& analyzer, wiz2::load_data:
 	if (!pass) {
 		std::cout << "internal error9\n";
 		return;
+	}
+}
+
+
+void _AddNew(wiz::MGM::GroupManager<std::string>& analyzer, wiz2::load_data::UserType* ut)
+{
+	for (int i = 0; i < ut->GetUserTypeListSize(); ++i) {
+		std::string name = ut->GetUserTypeList(i)->GetName();
+		if (ut->GetUserTypeList(i)->GetIListSize() == 0) {
+			continue;
+		}
+
+		if (name == "NewEmpty") {
+			AddNewEmpty(analyzer, ut->GetUserTypeList(i));
+		}
+		else if (name == "New") {
+			AddNew(analyzer, ut->GetUserTypeList(i)); // object
+		}
+		else if (name == "NewArray") {
+			AddNewArray(analyzer, ut->GetUserTypeList(i));
+		}
+		else if (name == "NewLocal") { // ptr + integer..
+			AddNewLocal(analyzer, ut->GetUserTypeList(i));
+		}
+		else if (name == "NewFromOther") { // chk array? or object?
+			AddNewFromOther(analyzer, ut->GetUserTypeList(i));
+		}
+		else if (name == "ReturnId") {
+			ReturnPtrId(analyzer, ut->GetUserTypeList(i));
+		}
+		else if (name == "access") {
+			Access(analyzer, ut->GetUserTypeList(i));
+		}
+		else if (name == "access_array") {
+			AccessArray(analyzer, ut->GetUserTypeList(i));
+		}
+		else if (name == "assign") { // chk array or object?
+			Assign(analyzer, ut->GetUserTypeList(i));
+		}
+		else if (name == "delete") { // chk array or object?
+			Delete(analyzer, ut->GetUserTypeList(i));
+		}
+		else if (name == "delete[]") { // chk array or object?
+			DeleteArray(analyzer, ut->GetUserTypeList(i));
+		}
 	}
 }
 
