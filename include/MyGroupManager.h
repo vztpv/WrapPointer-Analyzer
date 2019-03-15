@@ -87,8 +87,8 @@ namespace wiz {
 		private:
 			size_t order;
 		public:
-			bool hasNoItem()const { return 0 == itemMemberN; }
-			bool hasNoGroup()const { return 0 == groupMemberN; }
+			bool hasNoItem() { renewalItem(); return 0 == itemMemberN; }
+			bool hasNoGroup() { renewalGroup(); return 0 == groupMemberN; }
 		public:
 			typename std::vector< wiz::WizSmartPtr< Item<T> > >::iterator itemBegin() { return itemMember.begin(); }
 			typename std::vector< wiz::WizSmartPtr< Item<T> > >::iterator itemEnd() { return itemMember.end(); }
@@ -117,8 +117,8 @@ namespace wiz {
 			}
 		public:
 			std::string getName()const { return name; }
-			int getItemMemberN()const { return itemMemberN; }
-			int getGroupMemberN()const { return groupMemberN; }
+			int getItemMemberN() { renewalItem();  return itemMemberN; }
+			int getGroupMemberN() { renewalGroup(); return groupMemberN; }
 
 			bool isItemExist(const std::string& itemName)
 			{
@@ -339,7 +339,7 @@ namespace wiz {
 			void renewalItem(const int start = 0) /// isNeedRenewal? <- make?? todo!!
 			{
 				int count = start;
-				for (int i = start; i < itemMemberN; i++)
+				for (int i = start; i < itemMember.size(); i++)
 				{
 					if (!itemMember[i].isNULL())
 					{
@@ -360,7 +360,7 @@ namespace wiz {
 			void renewalGroup(const int start = 0)
 			{
 				int count = start;
-				for (int i = start; i < groupMemberN; i++)
+				for (int i = start; i < groupMember.size(); i++)
 				{
 					if (!groupMember[i].isNULL())
 					{
