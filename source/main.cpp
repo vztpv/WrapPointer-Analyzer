@@ -92,16 +92,22 @@ void AddNewEmpty(wiz::MGM::GroupManager<std::string>& analyzer, wiz2::load_data:
 		analyzer.NewItem(x, "object-nullptr");
 		analyzer.AddItemToGroup(x, "relation");
 		analyzer.AddGroupToGroup(x, "object-nullptr");
+
+
+		if (analyzer.IsGroupExist("deleted_pid" + x, "deleted_pid")) {
+			analyzer.RemoveGroupFromGroup("deleted_pid" + x, "deleted_pid");
+			analyzer.RemoveGroup("deleted_pid" + x);
+		}
 	}
 
 	_AddNew(analyzer, ut);
 }
 
-void AddNew(wiz::MGM::GroupManager<std::string>& analyzer, wiz2::load_data::UserType* ut);
+void AddNew(wiz::MGM::GroupManager<std::string>& analyzer, wiz2::load_data::UserType* ut, bool is_local);
 
-void AddNewArray(wiz::MGM::GroupManager<std::string>& analyzer, wiz2::load_data::UserType* ut);
+void AddNewArray(wiz::MGM::GroupManager<std::string>& analyzer, wiz2::load_data::UserType* ut, bool is_local);
 
-void AddNew(wiz::MGM::GroupManager<std::string>& analyzer, wiz2::load_data::UserType* ut)
+void AddNew(wiz::MGM::GroupManager<std::string>& analyzer, wiz2::load_data::UserType* ut, bool is_local)
 {
 	if (ut->GetUserTypeListSize() <= 0) {
 		//std::cout << "intenal error2\n";
@@ -124,6 +130,10 @@ void AddNew(wiz::MGM::GroupManager<std::string>& analyzer, wiz2::load_data::User
 			analyzer.RemoveGroupFromGroup("deleted" + y, "deleted");
 			analyzer.RemoveGroup("deleted" + y);
 		}
+		if (analyzer.IsGroupExist("deleted_pid" + x, "deleted_pid")) {
+			analyzer.RemoveGroupFromGroup("deleted_pid" + x, "deleted_pid");
+			analyzer.RemoveGroup("deleted_pid" + x);
+		}
  		analyzer.NewGroup(x, 1, 1);
 		analyzer.AddGroupToGroup(x, "inited");
 		analyzer.AddGroupToGroup(x, "ptr-list");
@@ -141,12 +151,16 @@ void AddNew(wiz::MGM::GroupManager<std::string>& analyzer, wiz2::load_data::User
 		// offset
 		analyzer.NewItem("offset" + x, "0");
 		analyzer.AddItemToGroup("offset" + x, "offset");
+
+		if (is_local) {
+			analyzer.AddGroupToGroup(y, "local");
+		}
 	}
 	//
 	_AddNew(analyzer, inner);
 }
 
-void AddNewArray(wiz::MGM::GroupManager<std::string>& analyzer, wiz2::load_data::UserType* ut)
+void AddNewArray(wiz::MGM::GroupManager<std::string>& analyzer, wiz2::load_data::UserType* ut, bool is_local)
 {
 	// 
 	std::string y = GetObjectId();
@@ -166,6 +180,11 @@ void AddNewArray(wiz::MGM::GroupManager<std::string>& analyzer, wiz2::load_data:
 			analyzer.RemoveGroupFromGroup("deleted" + y, "deleted");
 			analyzer.RemoveGroup("deleted" + y);
 		}
+		if (analyzer.IsGroupExist("deleted_pid" + x, "deleted_pid")) {
+			analyzer.RemoveGroupFromGroup("deleted_pid" + x, "deleted_pid");
+			analyzer.RemoveGroup("deleted_pid" + x);
+		}
+
 		analyzer.NewGroup(x, 1, 1);
 		analyzer.AddGroupToGroup(x, "inited");
 		analyzer.AddGroupToGroup(x, "ptr-list");
@@ -183,6 +202,11 @@ void AddNewArray(wiz::MGM::GroupManager<std::string>& analyzer, wiz2::load_data:
 		// offset
 		analyzer.NewItem("offset" + x, "0");
 		analyzer.AddItemToGroup("offset" + x, "offset");
+
+		//
+		if (is_local) {
+			analyzer.AddGroupToGroup(y, "local");
+		}
 	}
 	//
 	_AddNew(analyzer, ut);
@@ -190,7 +214,7 @@ void AddNewArray(wiz::MGM::GroupManager<std::string>& analyzer, wiz2::load_data:
 
 void Access(wiz::MGM::GroupManager<std::string>& analyzer, wiz2::load_data::UserType* ut);
 // ptr + integer.
-void AddNewLocal(wiz::MGM::GroupManager<std::string>& analyzer, wiz2::load_data::UserType* ut)
+void AddNewPlus(wiz::MGM::GroupManager<std::string>& analyzer, wiz2::load_data::UserType* ut)
 {
 	// todo!
 	// ptr <- is deleted?? or nullptr? => Error
@@ -346,14 +370,14 @@ void Access(wiz::MGM::GroupManager<std::string>& analyzer, wiz2::load_data::User
 	if (analyzer.IsGroupExist(pid, "not-inited")) {
 		std::cout << "Accessed invalid pointer\n";
 		return;
+	}	
+	if (analyzer.IsGroupExist("deleted_pid" + pid, "deleted_pid")) {
+		std::cout << "Accessed deleted pointer\n";
+		return;
 	}
 	std::string object_id;
 	if (wiz::MGM::Item<std::string> object; analyzer.GetItem(pid, object)) {
 		object_id = object.getValue();
-		if (analyzer.IsGroupExist("deleted" + object.getValue(), "deleted")) {
-			std::cout << "Accessed deleted pointer\n";
-			return;
-		}
 	}
 	if (wiz::MGM::Item<std::string> x; analyzer.GetItem("offset" + pid, x) && analyzer.IsGroupExist(object_id, "not-array")) {
 		if (stoll(x.getValue()) != 0) {
@@ -380,13 +404,14 @@ void AccessArray(wiz::MGM::GroupManager<std::string>& analyzer, wiz2::load_data:
 		std::cout << "Accessed invalid pointer\n";
 		return;
 	}
+	if (analyzer.IsGroupExist("deleted_pid" + pid, "deleted_pid")) {
+		std::cout << "Accessed deleted pointer\n";
+		return;
+	}
+
 	std::string object_id;
 	if (wiz::MGM::Item<std::string> object; analyzer.GetItem(pid, object)) {
 		object_id = object.getValue();
-		if (analyzer.IsGroupExist("deleted" + object.getValue(), "deleted")) {
-			std::cout << "Accessed deleted pointer\n";
-			return;
-		}
 	}
 	if (analyzer.IsGroupExist(object_id, "not-array")) {
 		if (stoll(idx) != 0) {
@@ -540,8 +565,13 @@ void Delete(wiz::MGM::GroupManager<std::string>& analyzer, wiz2::load_data::User
 					analyzer.SetValue((*iter)->getName(), "object-nullptr");
 					analyzer.RemoveItemFromGroup((*iter)->getName(), object_name);
 					analyzer.AddGroupToGroup((*iter)->getName(), "object-nullptr");
+					
+					std::string id = (*iter)->getName();
+					analyzer.NewGroup("deleted_pid" + id, 1, 1);
+					analyzer.AddGroupToGroup("deleted_pid" + id, "deleted_pid");
 				}
 			}
+
 
 			analyzer.NewGroup("deleted" + object_name, 1, 1);
 			analyzer.AddGroupToGroup("deleted" + object_name, "deleted");
@@ -549,6 +579,8 @@ void Delete(wiz::MGM::GroupManager<std::string>& analyzer, wiz2::load_data::User
 			
 			analyzer.RemoveGroupFromGroup(object_name, "not-array"); //
 			
+
+			analyzer.RemoveGroupFromGroup(object_name, "local");
 
 			analyzer.RemoveGroupFromGroup(object_name, "object-list");
 			analyzer.RemoveGroup(object_name);
@@ -558,6 +590,7 @@ void Delete(wiz::MGM::GroupManager<std::string>& analyzer, wiz2::load_data::User
 			
 			analyzer.RemoveItemFromGroup("offset" + id, "offset");
 			analyzer.RemoveItem("offset" + id);
+
 
 
 			long long object_no = stoll(object_name.substr(6, object_name.size() - 6));
@@ -636,9 +669,15 @@ void DeleteArray(wiz::MGM::GroupManager<std::string>& analyzer, wiz2::load_data:
 				if (!iter->isNULL()) {
 					analyzer.SetValue((*iter)->getName(), "object-nullptr");
 					analyzer.RemoveItemFromGroup((*iter)->getName(), object_name);
-					analyzer.AddGroupToGroup((*iter)->getName(), "object-nullptr");
+					analyzer.AddGroupToGroup((*iter)->getName(), "object-nullptr"); 
+					
+					std::string id = (*iter)->getName();
+
+					analyzer.NewGroup("deleted_pid" + id, 1, 1);
+					analyzer.AddGroupToGroup("deleted_pid" + id, "deleted_pid");
 				}
 			}
+
 
 			analyzer.NewGroup("deleted" + object_name, 1, 1);
 			analyzer.AddGroupToGroup("deleted" + object_name, "deleted");
@@ -646,6 +685,8 @@ void DeleteArray(wiz::MGM::GroupManager<std::string>& analyzer, wiz2::load_data:
 			analyzer.RemoveGroupFromGroup(object_name, "array"); // 
 			analyzer.RemoveItemFromGroup("array-size" + object_name, "array-size");
 			analyzer.RemoveItem("array-size" + object_name);
+
+			analyzer.RemoveGroupFromGroup(object_name, "local");
 
 			analyzer.RemoveGroupFromGroup(object_name, "object-list");
 
@@ -687,13 +728,19 @@ void _AddNew(wiz::MGM::GroupManager<std::string>& analyzer, wiz2::load_data::Use
 			AddNewEmpty(analyzer, ut->GetUserTypeList(i));
 		}
 		else if (name == "New") {
-			AddNew(analyzer, ut->GetUserTypeList(i)); // object
+			AddNew(analyzer, ut->GetUserTypeList(i), false); // object
+		}
+		else if (name == "NewLocal") {
+			AddNew(analyzer, ut->GetUserTypeList(i), true); // object
 		}
 		else if (name == "NewArray") {
-			AddNewArray(analyzer, ut->GetUserTypeList(i));
+			AddNewArray(analyzer, ut->GetUserTypeList(i), false);
 		}
-		else if (name == "NewLocal") { // ptr + integer..
-			AddNewLocal(analyzer, ut->GetUserTypeList(i));
+		else if (name == "NewLocalArray") {
+			AddNewArray(analyzer, ut->GetUserTypeList(i), true);
+		}
+		else if (name == "NewPlus") { // ptr + integer..
+			AddNewPlus(analyzer, ut->GetUserTypeList(i));
 		}
 		else if (name == "NewFromOther") { // chk array? or object?
 			AddNewFromOther(analyzer, ut->GetUserTypeList(i));
@@ -746,7 +793,9 @@ int main(void)
 		analyzer.NewGroup("array-size", 1, 1); // linked object! not pointer.
 
 		analyzer.NewGroup("offset", 1, 1);
-		
+		analyzer.NewGroup("local", 1, 1); // linked object.
+		analyzer.NewGroup("deleted_pid", 1, 1);
+
 		// loop 
 		for (int i = 0; i < global.GetUserTypeListSize(); ++i) {
 			// read line?
@@ -757,13 +806,19 @@ int main(void)
 				AddNewEmpty(analyzer, global.GetUserTypeList(i));
 			}
 			else if (name == "New") { 
-				AddNew(analyzer, global.GetUserTypeList(i)); // object
+				AddNew(analyzer, global.GetUserTypeList(i), false); // object
+			}
+			else if (name == "NewLocal") {
+				AddNew(analyzer, global.GetUserTypeList(i), true); // object
 			}
 			else if (name == "NewArray") {
-				AddNewArray(analyzer, global.GetUserTypeList(i));
+				AddNewArray(analyzer, global.GetUserTypeList(i), false);
 			}
-			else if (name == "NewLocal") { // ptr + integer..
-				AddNewLocal(analyzer, global.GetUserTypeList(i));
+			else if (name == "NewLocalArray") {
+				AddNewArray(analyzer, global.GetUserTypeList(i), true);
+			}
+			else if (name == "NewPlus") { // ptr + integer..
+				AddNewPlus(analyzer, global.GetUserTypeList(i));
 			}
 			else if (name == "NewFromOther") { // chk array? or object?
 				AddNewFromOther(analyzer, global.GetUserTypeList(i));
