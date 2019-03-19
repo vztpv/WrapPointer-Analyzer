@@ -94,9 +94,9 @@ void AddNewEmpty(wiz::MGM::GroupManager<std::string>& analyzer, wiz2::load_data:
 		analyzer.AddGroupToGroup(x, "object-nullptr");
 
 
-		if (analyzer.IsGroupExist("deleted_pid" + x, "deleted_pid")) {
-			analyzer.RemoveGroupFromGroup("deleted_pid" + x, "deleted_pid");
-			analyzer.RemoveGroup("deleted_pid" + x);
+		if (analyzer.IsGroupExist("deleted-pid" + x, "deleted-pid")) {
+			analyzer.RemoveGroupFromGroup("deleted-pid" + x, "deleted-pid");
+			analyzer.RemoveGroup("deleted-pid" + x);
 		}
 	}
 
@@ -130,10 +130,12 @@ void AddNew(wiz::MGM::GroupManager<std::string>& analyzer, wiz2::load_data::User
 			analyzer.RemoveGroupFromGroup("deleted" + y, "deleted");
 			analyzer.RemoveGroup("deleted" + y);
 		}
-		if (analyzer.IsGroupExist("deleted_pid" + x, "deleted_pid")) {
-			analyzer.RemoveGroupFromGroup("deleted_pid" + x, "deleted_pid");
-			analyzer.RemoveGroup("deleted_pid" + x);
+		if (analyzer.IsGroupExist("deleted-pid" + x, "deleted-pid")) {
+			analyzer.RemoveGroupFromGroup("deleted-pid" + x, "deleted-pid");
+			analyzer.RemoveGroup("deleted-pid" + x);
 		}
+
+
  		analyzer.NewGroup(x, 1, 1);
 		analyzer.AddGroupToGroup(x, "inited");
 		analyzer.AddGroupToGroup(x, "ptr-list");
@@ -148,13 +150,11 @@ void AddNew(wiz::MGM::GroupManager<std::string>& analyzer, wiz2::load_data::User
 	
 		analyzer.AddGroupToGroup(x, y); //
 
+
 		// offset
 		analyzer.NewItem("offset" + x, "0");
 		analyzer.AddItemToGroup("offset" + x, "offset");
 
-		if (is_local) {
-			analyzer.AddGroupToGroup(y, "local");
-		}
 	}
 	//
 	_AddNew(analyzer, inner);
@@ -180,10 +180,11 @@ void AddNewArray(wiz::MGM::GroupManager<std::string>& analyzer, wiz2::load_data:
 			analyzer.RemoveGroupFromGroup("deleted" + y, "deleted");
 			analyzer.RemoveGroup("deleted" + y);
 		}
-		if (analyzer.IsGroupExist("deleted_pid" + x, "deleted_pid")) {
-			analyzer.RemoveGroupFromGroup("deleted_pid" + x, "deleted_pid");
-			analyzer.RemoveGroup("deleted_pid" + x);
+		if (analyzer.IsGroupExist("deleted-pid" + x, "deleted-pid")) {
+			analyzer.RemoveGroupFromGroup("deleted-pid" + x, "deleted-pid");
+			analyzer.RemoveGroup("deleted-pid" + x);
 		}
+		
 
 		analyzer.NewGroup(x, 1, 1);
 		analyzer.AddGroupToGroup(x, "inited");
@@ -204,9 +205,7 @@ void AddNewArray(wiz::MGM::GroupManager<std::string>& analyzer, wiz2::load_data:
 		analyzer.AddItemToGroup("offset" + x, "offset");
 
 		//
-		if (is_local) {
-			analyzer.AddGroupToGroup(y, "local");
-		}
+		
 	}
 	//
 	_AddNew(analyzer, ut);
@@ -229,6 +228,11 @@ void AddNewPlus(wiz::MGM::GroupManager<std::string>& analyzer, wiz2::load_data::
 
 			if (analyzer.IsGroupExist(ppid, "not-inited")) { // nullptr..
 				std::cout << "Accessed invalid pointer\n";
+				return;
+			}
+
+			if (analyzer.IsGroupExist("deleted-pid" + ppid, "deleted-pid")) {
+				std::cout << "Accessed deleted pointer\n";
 				return;
 			}
 
@@ -341,8 +345,8 @@ void AddNewFromOther(wiz::MGM::GroupManager<std::string>& analyzer, wiz2::load_d
 		}
 
 		if (!pass) {
-			std::cout << "internal error7\n";
-			return;
+			//std::cout << "internal error7\n";
+			//return;
 		}
 	}
 }
@@ -371,13 +375,18 @@ void Access(wiz::MGM::GroupManager<std::string>& analyzer, wiz2::load_data::User
 		std::cout << "Accessed invalid pointer\n";
 		return;
 	}	
-	if (analyzer.IsGroupExist("deleted_pid" + pid, "deleted_pid")) {
-		std::cout << "Accessed deleted pointer\n";
-		return;
-	}
 	std::string object_id;
 	if (wiz::MGM::Item<std::string> object; analyzer.GetItem(pid, object)) {
 		object_id = object.getValue();
+
+		if (object_id == "object-nullptr") {
+			std::cout << "Accessd not inited or null or deleted thing\n";
+			return;
+		}
+	}
+	if (analyzer.IsGroupExist("deleted-pid" + pid, "deleted-pid")) {
+		std::cout << "Accessed deleted pointer\n";
+		return;
 	}
 	if (wiz::MGM::Item<std::string> x; analyzer.GetItem("offset" + pid, x) && analyzer.IsGroupExist(object_id, "not-array")) {
 		if (stoll(x.getValue()) != 0) {
@@ -404,7 +413,7 @@ void AccessArray(wiz::MGM::GroupManager<std::string>& analyzer, wiz2::load_data:
 		std::cout << "Accessed invalid pointer\n";
 		return;
 	}
-	if (analyzer.IsGroupExist("deleted_pid" + pid, "deleted_pid")) {
+	if (analyzer.IsGroupExist("deleted-pid" + pid, "deleted-pid")) {
 		std::cout << "Accessed deleted pointer\n";
 		return;
 	}
@@ -412,6 +421,11 @@ void AccessArray(wiz::MGM::GroupManager<std::string>& analyzer, wiz2::load_data:
 	std::string object_id;
 	if (wiz::MGM::Item<std::string> object; analyzer.GetItem(pid, object)) {
 		object_id = object.getValue();
+		
+		if (object_id == "object-nullptr") {
+			std::cout << "Accessd not inited or null or deleted thing\n";
+			return;
+		}
 	}
 	if (analyzer.IsGroupExist(object_id, "not-array")) {
 		if (stoll(idx) != 0) {
@@ -434,6 +448,9 @@ void Assign(wiz::MGM::GroupManager<std::string>& analyzer, wiz2::load_data::User
 	// pid <- pointer id
 	std::string left_pid = GetPtrId(ut->GetItemList(0).GetName());
 	std::string right_pid = GetPtrId(ut->GetItemList(0).Get(0));
+
+	// self assign -> pass
+	if (left_pid == right_pid) { return; } 
 
 	// wheter left is deleted..
 	if (std::string left_obj_id; analyzer.IsItemExist(left_pid, "relation") &&
@@ -459,8 +476,8 @@ void Assign(wiz::MGM::GroupManager<std::string>& analyzer, wiz2::load_data::User
 	
 	analyzer.RemoveItem(left_pid);
 
-	bool inited = false;
-	if (inited = analyzer.IsGroupExist(right_pid, "inited")) {
+	
+	if (bool inited = false; inited = analyzer.IsGroupExist(right_pid, "inited")) {
 		if (analyzer.IsGroupExist(left_pid, "not-inited")) {
 			analyzer.RemoveGroupFromGroup(left_pid, "not-inited");
 			analyzer.AddGroupToGroup(left_pid, "inited");
@@ -471,6 +488,17 @@ void Assign(wiz::MGM::GroupManager<std::string>& analyzer, wiz2::load_data::User
 			analyzer.RemoveGroupFromGroup(left_pid, "inited");
 			analyzer.AddGroupToGroup(left_pid, "not-inited");
 		}
+	}
+
+
+	// check deleted pid
+	if (analyzer.IsGroupExist("deleted-pid" + left_pid)) {
+		analyzer.RemoveGroupFromGroup("deleted-pid" + left_pid, "deleted-pid");
+		analyzer.RemoveGroup("deleted-pid" + left_pid);
+	}
+	if (analyzer.IsGroupExist("deleted-pid" + right_pid)) {
+		analyzer.NewGroup("deleted-pid" + left_pid, 1, 1);
+		analyzer.AddGroupToGroup("deleted-pid" + left_pid, "deleted-pid");
 	}
 
 	// left enter right relation? (inited?) - if right is not inited?
@@ -492,8 +520,6 @@ void Assign(wiz::MGM::GroupManager<std::string>& analyzer, wiz2::load_data::User
 			pass = analyzer.SetValue("offset" + left_pid, b->getValue());
 		}
 	}
-
-
 }
 
 void Delete(wiz::MGM::GroupManager<std::string>& analyzer, wiz2::load_data::UserType* ut)
@@ -502,7 +528,10 @@ void Delete(wiz::MGM::GroupManager<std::string>& analyzer, wiz2::load_data::User
 	std::string obj_id;
 
 	if (analyzer.GetValue(id, obj_id)) {
-		//
+		if (obj_id == "object-nullptr") {
+			std::cout << "delete already deleted or not inited or null thing\n";
+			return;
+		}
 	}
 	else {
 		std::cout << "tried delete already deleted thing1\n";
@@ -562,13 +591,13 @@ void Delete(wiz::MGM::GroupManager<std::string>& analyzer, wiz2::load_data::User
 			analyzer.GetGroup(object_name, temp);
 			for (auto iter = temp->groupBegin(); iter != temp->groupEnd(); ++iter) {
 				if (!iter->isNULL()) {
-					analyzer.SetValue((*iter)->getName(), "object-nullptr");
-					analyzer.RemoveItemFromGroup((*iter)->getName(), object_name);
-					analyzer.AddGroupToGroup((*iter)->getName(), "object-nullptr");
-					
 					std::string id = (*iter)->getName();
-					analyzer.NewGroup("deleted_pid" + id, 1, 1);
-					analyzer.AddGroupToGroup("deleted_pid" + id, "deleted_pid");
+
+					analyzer.SetValue(id, "object-nullptr");
+					analyzer.AddGroupToGroup(id, "object-nullptr");
+					
+					analyzer.NewGroup("deleted-pid" + id, 1, 1);
+					analyzer.AddGroupToGroup("deleted-pid" + id, "deleted-pid");
 				}
 			}
 
@@ -577,22 +606,15 @@ void Delete(wiz::MGM::GroupManager<std::string>& analyzer, wiz2::load_data::User
 			analyzer.AddGroupToGroup("deleted" + object_name, "deleted");
 
 			
+			
 			analyzer.RemoveGroupFromGroup(object_name, "not-array"); //
 			
 
-			analyzer.RemoveGroupFromGroup(object_name, "local");
 
 			analyzer.RemoveGroupFromGroup(object_name, "object-list");
 			analyzer.RemoveGroup(object_name);
 
-			analyzer.RemoveItemFromGroup(id, "relation");
-			analyzer.RemoveItem(id);
-			
-			analyzer.RemoveItemFromGroup("offset" + id, "offset");
-			analyzer.RemoveItem("offset" + id);
-
-
-
+			//
 			long long object_no = stoll(object_name.substr(6, object_name.size() - 6));
 			removed_tids.insert(object_no); // object
 			tids.erase(object_no);
@@ -615,7 +637,10 @@ void DeleteArray(wiz::MGM::GroupManager<std::string>& analyzer, wiz2::load_data:
 	std::string obj_id;
 
 	if (analyzer.GetValue(id, obj_id)) {
-		//
+		if (obj_id == "object-nullptr") {
+			std::cout << "delete already deleted or not inited or null thing\n";
+			return;
+		}
 	}
 	else {
 		std::cout << "tried delete already deleted thing1\n";
@@ -667,14 +692,14 @@ void DeleteArray(wiz::MGM::GroupManager<std::string>& analyzer, wiz2::load_data:
 			analyzer.GetGroup(object_name, temp);
 			for (auto iter = temp->groupBegin(); iter != temp->groupEnd(); ++iter) {
 				if (!iter->isNULL()) {
-					analyzer.SetValue((*iter)->getName(), "object-nullptr");
-					analyzer.RemoveItemFromGroup((*iter)->getName(), object_name);
-					analyzer.AddGroupToGroup((*iter)->getName(), "object-nullptr"); 
-					
 					std::string id = (*iter)->getName();
 
-					analyzer.NewGroup("deleted_pid" + id, 1, 1);
-					analyzer.AddGroupToGroup("deleted_pid" + id, "deleted_pid");
+					analyzer.SetValue(id, "object-nullptr");
+					analyzer.AddGroupToGroup(id, "object-nullptr"); 
+					
+
+					analyzer.NewGroup("deleted-pid" + id, 1, 1);
+					analyzer.AddGroupToGroup("deleted-pid" + id, "deleted-pid");
 				}
 			}
 
@@ -682,21 +707,17 @@ void DeleteArray(wiz::MGM::GroupManager<std::string>& analyzer, wiz2::load_data:
 			analyzer.NewGroup("deleted" + object_name, 1, 1);
 			analyzer.AddGroupToGroup("deleted" + object_name, "deleted");
 
+			
+
 			analyzer.RemoveGroupFromGroup(object_name, "array"); // 
 			analyzer.RemoveItemFromGroup("array-size" + object_name, "array-size");
 			analyzer.RemoveItem("array-size" + object_name);
 
-			analyzer.RemoveGroupFromGroup(object_name, "local");
 
 			analyzer.RemoveGroupFromGroup(object_name, "object-list");
 
 			analyzer.RemoveGroup(object_name);
 
-			analyzer.RemoveItemFromGroup(id, "relation");
-			analyzer.RemoveItem(id);
-
-			analyzer.RemoveItemFromGroup("offset" + id, "offset");
-			analyzer.RemoveItem("offset" + id);
 
 
 			long long object_no = stoll(object_name.substr(6, object_name.size() - 6));
@@ -793,8 +814,7 @@ int main(void)
 		analyzer.NewGroup("array-size", 1, 1); // linked object! not pointer.
 
 		analyzer.NewGroup("offset", 1, 1);
-		analyzer.NewGroup("local", 1, 1); // linked object.
-		analyzer.NewGroup("deleted_pid", 1, 1);
+		analyzer.NewGroup("deleted-pid", 1, 1); // linked pointer.
 
 		// loop 
 		for (int i = 0; i < global.GetUserTypeListSize(); ++i) {
