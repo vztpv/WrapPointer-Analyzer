@@ -290,17 +290,6 @@ void AddNewPlus(wiz::MGM::GroupManager<std::string>& analyzer, wiz2::load_data::
 			// offset
 			analyzer.NewItem("offset" + pid, offset);
 			analyzer.AddItemToGroup("offset" + pid, "offset");
-
-			// array-size
-			{
-				wiz::MGM::Item<std::string> x; analyzer.GetItem(pid, x);
-				if (wiz::MGM::Item<std::string> y; analyzer.GetItem(ppid, y)) {
-					if (wiz::MGM::Item<std::string> z; analyzer.GetItem("array-size" + y.getValue(), z)) {
-						analyzer.NewItem("array-size" + x.getValue(), std::to_string(stoll(z.getValue())));
-						analyzer.AddItemToGroup("array-size" + x.getValue(), "array-size");
-					}
-				}
-			}
 		}
 	}
 
