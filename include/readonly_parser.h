@@ -1409,7 +1409,7 @@ namespace wiz2 {
 						{
 							token_last = x - 1;
 
-							if (token_last >= 0 && token_last - token_first + 1 > 0) {
+							if (token_last && token_last - token_first + 1 > 0) {
 								aq->emplace_back(token_first, token_last - token_first + 1, false);
 								token.clear();
 
@@ -1425,7 +1425,7 @@ namespace wiz2 {
 						else if (0 == state && -1 != (idx = Equal(option->Assignment, *x))) {
 							token_last = x - 1;
 
-							if (token_last >= 0 && token_last - token_first + 1 > 0) {
+							if (token_last && token_last - token_first + 1 > 0) {
 								aq->emplace_back(token_first, token_last - token_first + 1, false);
 
 								token.clear();
@@ -1443,7 +1443,7 @@ namespace wiz2 {
 						}
 						else if (0 == state && isWhitespace(*x)) { // isspace ' ' \t \r \n , etc... ?
 							token_last = x - 1;
-							if (token_last >= 0 && token_last - token_first + 1 > 0) {
+							if (token_last && token_last - token_first + 1 > 0) {
 
 								aq->emplace_back(token_first, token_last - token_first + 1, false);
 
@@ -1458,7 +1458,7 @@ namespace wiz2 {
 						}
 						else if (0 == state && -1 != (idx = Equal(option->Left, *x))) {
 							token_last = x - 1;
-							if (token_last >= 0 && token_last - token_first + 1 > 0) {
+							if (token_last && token_last - token_first + 1 > 0) {
 
 								aq->emplace_back(token_first, token_last - token_first + 1, false);
 								token_first = x + 1;
@@ -1474,7 +1474,7 @@ namespace wiz2 {
 						}
 						else if (0 == state && -1 != (idx = Equal(option->Right, *x))) {
 							token_last = x - 1;
-							if (token_last >= 0 && token_last - token_first + 1 > 0) {
+							if (token_last && token_last - token_first + 1 > 0) {
 
 								aq->emplace_back(token_first, token_last - token_first + 1, false);
 								token_first = x + 1;
@@ -1494,7 +1494,7 @@ namespace wiz2 {
 						else if (0 == state && option->LineComment.empty() == false &&
 							-1 != checkDelimiter(x, last, option->LineComment)) { // different from load_data_from_file
 							token_last = x - 1;
-							if (token_last >= 0 && token_last - token_first + 1 > 0) {
+							if (token_last && token_last - token_first + 1 > 0) {
 								aq->emplace_back(token_first, token_last - token_first + 1, false);
 								token.clear();
 								x = token_last + 1;
