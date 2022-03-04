@@ -245,7 +245,7 @@ void AddNewPlus(wiz::MGM::GroupManager<std::string>& analyzer, wiz2::load_data::
 			}
 
 			if (wiz::MGM::Item<std::string> x; analyzer.GetItem("offset" + ppid, x) && analyzer.IsGroupExist(pobject, "not-array")) {
-				if (stoll(x.getValue()) != 0) {
+				if (stoll(offset) != 0) { // stoll(x.getValue()) != 0) {
 					std::cout << "Accessed maybe wrong pointer\n";
 					return;
 				}
@@ -253,7 +253,7 @@ void AddNewPlus(wiz::MGM::GroupManager<std::string>& analyzer, wiz2::load_data::
 			if (wiz::MGM::Item<std::string> x; analyzer.GetItem("offset" + ppid, x) && analyzer.IsGroupExist(pobject, "array")) {
 				if (wiz::MGM::Item<std::string> y; analyzer.GetItem(ppid, y)) {
 					if (wiz::MGM::Item<std::string> z; analyzer.GetItem("array-size" + y.getValue(), z)) {
-						if (long long a = stoll(x.getValue()); a < 0 || a >= stoll(z.getValue())) {
+						if (long long a = stoll(x.getValue()) + stoll(offset); a < 0 || a >= stoll(z.getValue())) {
 							std::cout << "Accessed maybe wrong index\n";
 							return;
 						}
@@ -290,6 +290,17 @@ void AddNewPlus(wiz::MGM::GroupManager<std::string>& analyzer, wiz2::load_data::
 			// offset
 			analyzer.NewItem("offset" + pid, offset);
 			analyzer.AddItemToGroup("offset" + pid, "offset");
+
+			// array-size
+			{
+				wiz::MGM::Item<std::string> x; analyzer.GetItem(pid, x);
+				if (wiz::MGM::Item<std::string> y; analyzer.GetItem(ppid, y)) {
+					if (wiz::MGM::Item<std::string> z; analyzer.GetItem("array-size" + y.getValue(), z)) {
+						analyzer.NewItem("array-size" + x.getValue(), std::to_string(stoll(z.getValue())));
+						analyzer.AddItemToGroup("array-size" + x.getValue(), "array-size");
+					}
+				}
+			}
 		}
 	}
 
@@ -407,7 +418,8 @@ void Access(wiz::MGM::GroupManager<std::string>& analyzer, wiz2::load_data::User
 void AccessArray(wiz::MGM::GroupManager<std::string>& analyzer, wiz2::load_data::UserType* ut)
 {
 	std::string pid = GetPtrId(ut->GetItemList(0).Get(0));
-	std::string idx = ut->GetItemList(1).Get(0);
+	std::string _idx = ut->GetItemList(1).Get(0);
+	size_t idx = stoll(_idx);
 
 	if (analyzer.IsGroupExist(pid, "not-inited")) {
 		std::cout << "Accessed invalid pointer\n";
@@ -427,15 +439,21 @@ void AccessArray(wiz::MGM::GroupManager<std::string>& analyzer, wiz2::load_data:
 			return;
 		}
 	}
+
+	wiz::MGM::Item<std::string> offset;
+	if (analyzer.GetItem("offset" + pid, offset)) {
+		idx += stoll(offset.getValue());
+	}
+
 	if (analyzer.IsGroupExist(object_id, "not-array")) {
-		if (stoll(idx) != 0) {
+		if (idx != 0) {
 			std::cout << "Accessed wrong index\n";
 			return;
 		}
 	}
 	if (analyzer.IsGroupExist(object_id, "array")) {
 		if (wiz::MGM::Item<std::string> z; analyzer.GetItem("array-size" + object_id, z)) {
-			if (long long a = stoll(idx); a < 0 || a >= stoll(z.getValue())) {
+			if (long long a = idx; a < 0 || a >= stoll(z.getValue())) {
 				std::cout << "Accessed wrong index\n";
 				return;
 			}
@@ -452,7 +470,7 @@ void Assign(wiz::MGM::GroupManager<std::string>& analyzer, wiz2::load_data::User
 	// self assign -> pass
 	if (left_pid == right_pid) { return; } 
 
-	// wheter left is deleted..
+	// whether left is deleted..
 	if (std::string left_obj_id; analyzer.IsItemExist(left_pid, "relation") &&
 		analyzer.GetValue(left_pid, left_obj_id) // if success return true.
 		) {
@@ -669,11 +687,9 @@ void DeleteArray(wiz::MGM::GroupManager<std::string>& analyzer, wiz2::load_data:
 			long long value = stoll(offset);
 
 			if (analyzer.IsGroupExist(obj_id, "array")) {
-				if (wiz::MGM::Item<std::string> z; analyzer.GetItem("array-size" + obj_id, z)) {
-					if (long long a = value; a < 0 || a >= stoll(z.getValue())) {
-						std::cout << "Deleted maybe wrong index\n";
-						return;
-					}
+				if (value != 0) {
+					std::cout << "Deleted maybe wrong index\n";
+					return;
 				}
 				// internal error
 			}
@@ -797,7 +813,7 @@ int main(void)
 		wiz2::load_data::UserType global;
 		wiz::MGM::GroupManager<std::string> analyzer("");
 
-		wiz2::load_data::LoadData::LoadDataFromFile("../WrapPointer Logger/output.txt", global);
+		wiz2::load_data::LoadData::LoadDataFromFile("../Memory Test/output.txt", global);
 
 		// analyzer init
 		analyzer.NewGroup("inited", 1, 1);
