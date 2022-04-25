@@ -7,6 +7,10 @@
 // do not make Cycle of WizSmartPtrs
 /// cf) new AAA[num];
 ///#define WizSmartPtr_DEBUG ??
+/// 
+///
+
+
 #include "global.h"
 
 namespace wiz{

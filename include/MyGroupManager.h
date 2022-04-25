@@ -65,7 +65,7 @@ namespace wiz {
 			virtual ~Item() { } // fixed! cout << "called" << endl; value.remove( true ); }
 		public:
 			bool empty() const { return value.isNULL(); }
-			std::string getName()const { return name; }
+			const std::string& getName()const { return name; }
 			T getValue()const { return *value; }
 			void setValue(const T& val) { *value = val; }
 
@@ -116,7 +116,7 @@ namespace wiz {
 				return this->name == group.name;
 			}
 		public:
-			std::string getName()const { return name; }
+			const std::string& getName()const { return name; }
 			int getItemMemberN() { renewalItem();  return itemMemberN; }
 			int getGroupMemberN() { renewalGroup(); return groupMemberN; }
 
@@ -219,8 +219,10 @@ namespace wiz {
 
 						int start = 0; int end = itemMemberN - 1;
 
-						for (int pick = start + 1; pick <= end; pick++)
+						//for (int pick = start + 1; pick <= end; pick++)
 						{
+							int pick = end;
+
 							int current = pick;
 							wiz::WizSmartPtr< Item<T> > temp = itemMember[pick]; //
 							for (; (current > 0) && (itemMember[current - 1]->getName() > temp->getName()); current--)
@@ -255,8 +257,9 @@ namespace wiz {
 
 					int start = 0; int end = groupMemberN - 1;
 
-					for (int pick = start + 1; pick <= end; pick++)
+					//for (int pick = start + 1; pick <= end; pick++)
 					{
+						int pick = end;
 						int current = pick;
 						wiz::WizSmartPtr< Group<T> > temp = groupMember[pick]; //
 						for (; (current > 0) && (groupMember[current - 1]->getName() > temp->getName()); current--)
@@ -343,7 +346,9 @@ namespace wiz {
 				{
 					if (!itemMember[i].isNULL())
 					{
-						itemMember[count] = std::move(itemMember[i]);
+						if (count != i) {
+							itemMember[count] = std::move(itemMember[i]);
+						}
 						count++;
 					}
 				}
@@ -357,6 +362,7 @@ namespace wiz {
 				itemMemberN = count;
 
 			}
+
 			void renewalGroup(const int start = 0)
 			{
 				int count = start;
@@ -364,7 +370,9 @@ namespace wiz {
 				{
 					if (!groupMember[i].isNULL())
 					{
-						groupMember[count] = std::move(groupMember[i]);
+						if (count != i) {
+							groupMember[count] = std::move(groupMember[i]);
+						}
 						count++;
 					}
 				}
@@ -378,6 +386,7 @@ namespace wiz {
 				groupMemberN = count;
 
 			}
+
 
 
 			int searchItem(const std::string & itemName) // return index! if index == -1 -> not exist
@@ -498,7 +507,7 @@ namespace wiz {
 			}
 			virtual ~GroupManager() { rootGroup.remove(true); } //rootGroup.remove(); }
 		public:
-			std::string GetCoreName()const { return rootGroup->getName(); }
+			const std::string& GetCoreName()const { return rootGroup->getName(); }
 
 			bool IsItemExist(const std::string& itemName)
 			{
