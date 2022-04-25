@@ -7,6 +7,7 @@
 #include "MyGroupManager.h"
 #include "readonly_parser.h"
 
+using namespace std::string_view_literals;
 
 class FileManager
 {
@@ -750,43 +751,43 @@ void _AddNew(wiz::MGM::GroupManager<std::string>& analyzer, wiz2::load_data::Use
 			continue;
 		}
 
-		if (name == "NewEmpty") {
+		if (name == "NewEmpty"sv) {
 			AddNewEmpty(analyzer, ut->GetUserTypeList(i));
 		}
-		else if (name == "New") {
+		else if (name == "New"sv) {
 			AddNew(analyzer, ut->GetUserTypeList(i), false); // object
 		}
-		else if (name == "NewLocal") {
+		else if (name == "NewLocal"sv) {
 			AddNew(analyzer, ut->GetUserTypeList(i), true); // object
 		}
-		else if (name == "NewArray") {
+		else if (name == "NewArray"sv) {
 			AddNewArray(analyzer, ut->GetUserTypeList(i), false);
 		}
-		else if (name == "NewLocalArray") {
+		else if (name == "NewLocalArray"sv) {
 			AddNewArray(analyzer, ut->GetUserTypeList(i), true);
 		}
-		else if (name == "NewPlus") { // ptr + integer..
+		else if (name == "NewPlus"sv) { // ptr + integer..
 			AddNewPlus(analyzer, ut->GetUserTypeList(i));
 		}
-		else if (name == "NewFromOther") { // chk array? or object?
+		else if (name == "NewFromOther"sv) { // chk array? or object?
 			AddNewFromOther(analyzer, ut->GetUserTypeList(i));
 		}
-		else if (name == "ReturnId") {
+		else if (name == "ReturnId"sv) {
 			ReturnPtrId(analyzer, ut->GetUserTypeList(i));
 		}
-		else if (name == "access") {
+		else if (name == "access"sv) {
 			Access(analyzer, ut->GetUserTypeList(i));
 		}
-		else if (name == "access_array") {
+		else if (name == "access_array"sv) {
 			AccessArray(analyzer, ut->GetUserTypeList(i));
 		}
-		else if (name == "assign") { // chk array or object?
+		else if (name == "assign"sv) { // chk array or object?
 			Assign(analyzer, ut->GetUserTypeList(i));
 		}
-		else if (name == "delete") { // chk array or object?
+		else if (name == "delete"sv) { // chk array or object?
 			Delete(analyzer, ut->GetUserTypeList(i));
 		}
-		else if (name == "delete[]") { // chk array or object?
+		else if (name == "delete[]"sv) { // chk array or object?
 			DeleteArray(analyzer, ut->GetUserTypeList(i));
 		}
 	}
@@ -797,12 +798,18 @@ void _AddNew(wiz::MGM::GroupManager<std::string>& analyzer, wiz2::load_data::Use
 
 int main(void)
 {
+	int a=clock();
 	try {
 		// load data using header only LoadData!
 		wiz2::load_data::UserType global;
 		wiz::MGM::GroupManager<std::string> analyzer("");
 
-		wiz2::load_data::LoadData::LoadDataFromFile("../Memory Test/output.txt", global);
+		{
+			int a = clock();
+			wiz2::load_data::LoadData::LoadDataFromFile("../WrapPointer Logger Test/output1.txt", global);
+			int b = clock();
+			std::cout << "load " << b - a << "ms\n";
+		}
 
 		// analyzer init
 		analyzer.NewGroup("inited", 1, 1);
@@ -824,46 +831,46 @@ int main(void)
 		// loop 
 		for (int i = 0; i < global.GetUserTypeListSize(); ++i) {
 			// read line?
-			const std::string name = global.GetUserTypeList(i)->GetName();
+			const std::string& name = global.GetUserTypeList(i)->GetName();
 
 			// chk not inited, memory leaks, double delete, new-delete macthing, and etc.. ( using my group manager )
-			if (name == "NewEmpty") {
+			if (name == "NewEmpty"sv) {
 				AddNewEmpty(analyzer, global.GetUserTypeList(i));
 			}
-			else if (name == "New") { 
+			else if (name == "New"sv) { 
 				AddNew(analyzer, global.GetUserTypeList(i), false); // object
 			}
-			else if (name == "NewLocal") {
+			else if (name == "NewLocal"sv) {
 				AddNew(analyzer, global.GetUserTypeList(i), true); // object
 			}
-			else if (name == "NewArray") {
+			else if (name == "NewArray"sv) {
 				AddNewArray(analyzer, global.GetUserTypeList(i), false);
 			}
-			else if (name == "NewLocalArray") {
+			else if (name == "NewLocalArray"sv) {
 				AddNewArray(analyzer, global.GetUserTypeList(i), true);
 			}
-			else if (name == "NewPlus") { // ptr + integer..
+			else if (name == "NewPlus"sv) { // ptr + integer..
 				AddNewPlus(analyzer, global.GetUserTypeList(i));
 			}
-			else if (name == "NewFromOther") { // chk array? or object?
+			else if (name == "NewFromOther"sv) { // chk array? or object?
 				AddNewFromOther(analyzer, global.GetUserTypeList(i));
 			}
-			else if (name == "ReturnId") { 
+			else if (name == "ReturnId"sv) { 
 				ReturnPtrId(analyzer, global.GetUserTypeList(i));
 			}
-			else if (name == "access") {
+			else if (name == "access"sv) {
 				Access(analyzer, global.GetUserTypeList(i));
 			}
-			else if (name == "access_array") {
+			else if (name == "access_array"sv) {
 				AccessArray(analyzer, global.GetUserTypeList(i));
 			}
-			else if (name == "assign") { // chk array or object?
+			else if (name == "assign"sv) { // chk array or object?
 				Assign(analyzer, global.GetUserTypeList(i));
 			}
-			else if (name == "delete") { // chk array or object?
+			else if (name == "delete"sv) { // chk array or object?
 				Delete(analyzer, global.GetUserTypeList(i));
 			}
-			else if (name == "delete[]") { // chk array or object?
+			else if (name == "delete[]"sv) { // chk array or object?
 				DeleteArray(analyzer, global.GetUserTypeList(i));
 			}
 		}
@@ -880,7 +887,8 @@ int main(void)
 	catch (...) {
 		std::cout << "internal error" << "\n";
 	}
-
+	int b = clock();
+	std::cout << b - a << "ms\n";
 	return 0;
 }
 
