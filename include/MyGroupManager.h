@@ -208,7 +208,9 @@ namespace wiz {
 
 			bool addItem(wiz::WizSmartPtr< Item<T> >& item)
 			{
-				{
+				{	
+					
+					
 					itemMember.push_back(item);
 
 					itemMemberN++;
@@ -246,7 +248,7 @@ namespace wiz {
 				return true;
 			}
 			bool addGroup(wiz::WizSmartPtr< Group<T> > & group) // empty group!
-			{
+			{	
 				groupMember.push_back(group);
 
 				groupMemberN++;
@@ -254,7 +256,7 @@ namespace wiz {
 				// sort
 				{
 					renewalGroup();
-
+					
 					int start = 0; int end = groupMemberN - 1;
 
 					//for (int pick = start + 1; pick <= end; pick++)
@@ -312,7 +314,7 @@ namespace wiz {
 
 						renewalItem(index);
 
-						itemMember.pop_back();
+						//itemMember.pop_back();
 					}
 				}
 
@@ -333,7 +335,7 @@ namespace wiz {
 
 					renewalGroup(index);
 
-					groupMember.pop_back();
+					//groupMember.pop_back();
 				}
 
 				return isSuccess;
@@ -341,28 +343,29 @@ namespace wiz {
 		private:
 			void renewalItem(const int start = 0) /// isNeedRenewal? <- make?? todo!!
 			{
+
 				int count = start;
 				for (int i = start; i < itemMember.size(); i++)
 				{
 					if (!itemMember[i].isNULL())
 					{
 						if (count != i) {
-							itemMember[count] = std::move(itemMember[i]);
+							itemMember[count] = (itemMember[i]);
 						}
 						count++;
 					}
 				}
 				// null initial!
-				for (int i = count; i < itemMemberN; i++)
+				for (int i = count; i < itemMember.size(); i++)
 				{
 					wiz::WizSmartPtr< Item<T> > temp(NULL);
 					itemMember[i] = temp;
 				}
 
 				itemMemberN = count;
+				itemMember.resize(count);
 
 			}
-
 			void renewalGroup(const int start = 0)
 			{
 				int count = start;
@@ -371,26 +374,26 @@ namespace wiz {
 					if (!groupMember[i].isNULL())
 					{
 						if (count != i) {
-							groupMember[count] = std::move(groupMember[i]);
+							groupMember[count] = (groupMember[i]);
 						}
 						count++;
 					}
 				}
 				// null initial!
-				for (int i = count; i < groupMemberN; i++)
+				for (int i = count; i < groupMember.size(); i++)
 				{
 					wiz::WizSmartPtr< Group<T> > temp(NULL);
 					groupMember[i] = temp; /// bug fixed!! 2012.5.2 7.43PM - why?
 				}
 
 				groupMemberN = count;
-
+				groupMember.resize(count);
 			}
-
 
 
 			int searchItem(const std::string & itemName) // return index! if index == -1 -> not exist
 			{
+				renewalItem();
 				int index = -1;
 				int left = 0; int right = itemMemberN - 1;
 				int middle; std::string middleKey;
@@ -425,6 +428,7 @@ namespace wiz {
 			}
 			int searchGroup(const std::string& groupName)
 			{
+				renewalGroup();
 				int index = -1;
 				int left = 0; int right = groupMemberN - 1;
 				int middle; std::string middleKey;

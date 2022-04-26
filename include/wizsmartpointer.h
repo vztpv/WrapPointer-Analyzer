@@ -25,20 +25,20 @@ private:
 public:
     const WizSmartPtr<T, IS_SAME_VALUE>* getThis()const { return this; }
 private:
-    void doNULL( WizSmartPtr<T, IS_SAME_VALUE>* sp )
+    __forceinline void doNULL( WizSmartPtr<T, IS_SAME_VALUE>* sp )
     {
         sp->ptr = NULL;
         sp->left = sp;
         sp->right = sp;
     }
-    void quit()
+    __forceinline void quit()
     {
         right->left = this->left;
         left->right = this->right;
         doNULL( this );
     }
 
-    void enter( const WizSmartPtr<T, IS_SAME_VALUE>& sp )
+    __forceinline void enter( const WizSmartPtr<T, IS_SAME_VALUE>& sp )
     {
         //wizard::assertNotNULL( sp );
         //wizard::assertNULL( this->ptr );
@@ -58,7 +58,7 @@ private:
         }
     }
 
-    void initFromOther( const WizSmartPtr<T, IS_SAME_VALUE>& sp )
+    __forceinline void initFromOther( const WizSmartPtr<T, IS_SAME_VALUE>& sp )
     {
         //wizard::assertNotEquals( this, &sp );
        // if( this == sp.getThis() ) { return; } 
@@ -101,7 +101,7 @@ public:
 
         initFromOther( sp );
 	}
-	virtual ~WizSmartPtr() /// virtual??
+    __forceinline virtual ~WizSmartPtr() /// virtual??
 	{
 		if (isOnlyOne())
 		{
@@ -113,7 +113,7 @@ public:
 		}
 	}
 public:
-    WizSmartPtr<T, IS_SAME_VALUE>& operator=( const WizSmartPtr<T, IS_SAME_VALUE>& _sp )
+    __forceinline WizSmartPtr<T, IS_SAME_VALUE>& operator=( const WizSmartPtr<T, IS_SAME_VALUE>& _sp )
     {
         // temp link
         WizSmartPtr<T, IS_SAME_VALUE> tempLink( _sp );
